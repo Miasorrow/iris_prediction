@@ -3,30 +3,43 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 import joblib
+import mlflow
+import mlflow.sklearn
 
-data = load_iris()
-X = data.data
-y = data.target
+# 🔥 active autolog
+mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.sklearn.autolog()
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
+def train_model():
+    data = load_iris()
+    X = data.data
+    y = data.target
 
-model = RandomForestClassifier()
-model.fit(X_train, y_train)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    with mlflow.start_run():
+        model = RandomForestClassifier()
+        model.fit(X_train, y_train)
 
-y_pred = model.predict(X_test)
+        y_pred = model.predict(X_test)
 
-accuracy = accuracy_score(y_test, y_pred)
-print("Accuracy :", accuracy)
+        accuracy = accuracy_score(y_test, y_pred)
+        print("Accuracy :", accuracy)
 
-# exemple de fleur
-sample = [[5.1, 3.5, 1.4, 0.2]]
+        # mlflow.log_metric("accuracy", accuracy)
+        # mlflow.sklearn.log_model(model, "model")
+        # mlflow.end_run()
 
-prediction = model.predict(sample)
+        # exemple de fleur
+        sample = [[5.1, 3.5, 1.4, 0.2]]
 
-print(prediction)
+        prediction = model.predict(sample)
 
-joblib.dump(model, "model.pkl")
-print("Model saved as model.pkl")
+        print(prediction)
 
+    joblib.dump(model, "model.pkl")
+    print("Model saved as model.pkl")
+
+if __name__ == "__main__":
+    train_model()
