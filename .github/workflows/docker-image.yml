@@ -32,6 +32,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./front
-          file: Dockerfile
+          file: ./front/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/iris_prediciton_front:latest
