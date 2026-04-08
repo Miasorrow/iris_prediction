@@ -30,7 +30,7 @@ jobs:
       with:
         # Docker Registry Url, eg: docker.io
         registry_url: 
-          docker.io
+          docker/login-action@v3
         repository_name: 
           iris_prediciton
         user_name: 
