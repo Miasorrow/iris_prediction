@@ -14,8 +14,35 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build the Docker image back
-      run: docker build . --file Dockerfile --tag iris_back:$(date +%s)
-    - name: Build the Docker image front
-      working-directory: ./front
-      run: docker build . --file Dockerfile --tag iris_front:$(date +%s)
+    
+    # - name: Build the Docker image back
+    #   run: docker build . --file Dockerfile --tag iris_back:$(date +%s)
+      
+    # - name: Build the Docker image front
+    #   working-directory: ./front
+    #   run: docker build . --file Dockerfile --tag iris_front:$(date +%s)
+
+      
+    - name: Build and Push to DockerHub BACK
+      # You may pin to the exact commit or the version.
+      # uses: MaximilianoBz/dockerhub-buildpush@372110d600041736063b948d05005b6039d8fb0c
+      uses: miasorrow/dockerhub-buildpush@v1.1
+      with:
+        # Docker Registry Url, eg: docker.io
+        registry_url: 
+          https://hub.docker.com/repository/docker/miasorrow/iris_prediciton/general
+        repository_name: 
+          iris_prediciton
+        user_name: 
+           ${{secrets.DOCKER_USERNAME}}
+        password: 
+          ${{secrets.DOCKER_PASSWORD}}
+
+    # - name: Build the Docker image front
+    #   working-directory: ./front
+    #   run: docker build . --file Dockerfile --tag iris_prediciton_front:$(date +%s)
+
+    # - name: push the Docker image front
+    #   run: docker push miasorrow/iris_prediciton_front:tagname
+    
+              
