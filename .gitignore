@@ -1,6 +1,6 @@
 venv/
 
-model.pkl
+
 __pycache__/
 mlflow.db
 mlartifacts/
