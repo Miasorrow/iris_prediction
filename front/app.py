@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import os
 
 st.title("🌸 Iris Predictor")
 
@@ -12,8 +13,8 @@ petal_length = st.number_input("Petal length", value=1.4)
 petal_width = st.number_input("Petal width", value=0.2)
 
 if st.button("Prédire"):
-
-    url = "http://127.0.0.1:8000/predict"
+    # Juste ca qui a changé c'est pour avoir la bonne url qui est donné en variable dans le docker compose
+    url = os.getenv("API_URL")
     
     params = {
         "sepal_length": sepal_length,
