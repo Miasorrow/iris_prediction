@@ -1,20 +1,37 @@
-from fastapi import FastAPI
-import joblib
+import streamlit as st
+import requests
 
-app = FastAPI()
+st.title("🌸 Iris Predictor")
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
+st.write("Entre les caractéristiques de la fleur :")
 
+# Inputs utilisateur
+sepal_length = st.number_input("Sepal length", value=5.1)
+sepal_width = st.number_input("Sepal width", value=3.5)
+petal_length = st.number_input("Petal length", value=1.4)
+petal_width = st.number_input("Petal width", value=0.2)
 
-@app.get("/predict")
-def predict():
-    model = joblib.load("model.pkl")
+if st.button("Prédire"):
 
-    # exemple de fleur
-    sample = [[5.1, 3.5, 1.4, 0.2]]
+    url = "http://127.0.0.1:8000/predict"
+    
+    params = {
+        "sepal_length": sepal_length,
+        "sepal_width": sepal_width,
+        "petal_length": petal_length,
+        "petal_width": petal_width
+    }
 
-    prediction = model.predict(sample)
+    response = requests.get(url, params=params)
 
-    return {"prediction": int(prediction[0])}
+    if response.status_code == 200:
+        prediction = response.json()["prediction"]
+
+        if prediction == 0:
+            st.success("🌸 Setosa")
+        elif prediction == 1:
+            st.success("🌼 Versicolor")
+        else:
+            st.success("🌺 Virginica")
+    else:
+        st.error("Erreur API 😢")
