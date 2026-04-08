@@ -30,7 +30,7 @@ jobs:
       with:
         # Docker Registry Url, eg: docker.io
         registry_url: 
-          https://hub.docker.com/repository/docker/miasorrow/iris_prediciton/general
+          docker.io
         repository_name: 
           iris_prediciton
         user_name: 
