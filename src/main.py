@@ -3,7 +3,7 @@ import joblib
 
 app = FastAPI()
 
-@app.get("/")
+@app.get("/prout")
 def read_root():
     return {"Hello": "World"}
 

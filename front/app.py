@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import os
 
-st.title("🌸 Iris Predictor")
+st.title("🌸 Iris Predictor", color="green")
 
 st.write("Entre les caractéristiques de la fleur :")
 
