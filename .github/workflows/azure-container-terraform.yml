@@ -1,0 +1,121 @@
+name: Build, Push to DockerHub and Deploy to Azure Web App
+env:
+  DOCKERHUB_IMAGE_BACK: ${{ secrets.DOCKER_USERNAME }}/iris_back
+  DOCKERHUB_IMAGE_FRONT: ${{ secrets.DOCKER_USERNAME }}/iris_front
+  AZURE_WEBAPP_BACK: Irispredictionback2
+  AZURE_WEBAPP_FRONT: irisfront2
+on:
+  push:
+    branches: ["master"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'Dockerfile'
+              - 'src/**'        # 👈 adapter selon ta structure
+            frontend:
+              - 'front/**'
+              - 'front/Dockerfile'
+
+  build-and-push-back:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD}}
+      - name: Build and push BACK to Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_IMAGE_BACK }}:${{ github.sha }}
+            ${{ env.DOCKERHUB_IMAGE_BACK }}:latest
+          file: ./Dockerfile   # 👈 adapter le chemin
+
+  build-and-push-front:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD}}
+      - name: Build and push FRONT to Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_IMAGE_FRONT }}:${{ github.sha }}
+            ${{ env.DOCKERHUB_IMAGE_FRONT }}:latest
+          context: ./front
+          file: ./front/Dockerfile   # 👈 adapter le chemin
+  deploy-back:
+    runs-on: ubuntu-latest
+    needs: [build-and-push-back, build-and-push-front]
+    if: always() && !failure() && !cancelled() && needs.build-and-push-back.result == 'success'
+    environment:
+      name: 'Development'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./terraform/terraform_back  # 👈 adapter le chemin
+
+      - name: Terraform Plan
+        run: terraform plan -var rg_name=manon -var ClientId=${{ secrets.AZURE_CLIENT_ID}} -var ClientSecret=${{ secrets.AZURE_SECRET_ID}} -var TenantId=${{ secrets.AZURE_TENANT_ID }} -var SubscriptionId=${{ secrets.AZURE_SUB_ID }}
+        working-directory: ./terraform/terraform_back
+
+      - name: Terraform Apply 
+        run: terraform apply -auto-approve -var rg_name=manon -var ClientId=${{ secrets.AZURE_CLIENT_ID}} -var ClientSecret=${{ secrets.AZURE_SECRET_ID}} -var TenantId=${{ secrets.AZURE_TENANT_ID }} -var SubscriptionId=${{ secrets.AZURE_SUB_ID }}
+        working-directory: ./terraform/terraform_back
+  deploy-front:
+    runs-on: ubuntu-latest
+    needs: [build-and-push-back, build-and-push-front]
+    if: always() && !failure() && !cancelled() && needs.build-and-push-front.result == 'success'
+    environment:
+      name: 'Development'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./terraform/terraform_front  # 👈 adapter le chemin
+
+      - name: Terraform Plan
+        run: terraform plan -var rg_name=manon -var ClientId=${{ secrets.AZURE_CLIENT_ID}} -var ClientSecret=${{ secrets.AZURE_SECRET_ID}} -var TenantId=${{ secrets.AZURE_TENANT_ID }} -var SubscriptionId=${{ secrets.AZURE_SUB_ID }}
+        working-directory: ./terraform/terraform_front
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var rg_name=manon -var ClientId=${{ secrets.AZURE_CLIENT_ID}} -var ClientSecret=${{ secrets.AZURE_SECRET_ID}} -var TenantId=${{ secrets.AZURE_TENANT_ID }} -var SubscriptionId=${{ secrets.AZURE_SUB_ID }}
+        working-directory: ./terraform/terraform_front
